@@ -10,7 +10,7 @@ import Data.List (elemIndex)
 
 type Position = (Int,Int)
 type Obstacle = Position
-data Direction = N | E | S | W
+data Direction = N | E | S | W deriving (Show, Eq)
 instance Enum Direction where
     fromEnum x = case x of
         N -> 0
@@ -24,38 +24,71 @@ instance Enum Direction where
         3 -> W
         _ -> error "incomplete definition of Enum instance for Direction"
 
-data Guard = Guard {pos :: Position, dir :: Direction, trace :: [Position]}
+data Guard = 
+    Guard {
+        position :: Position, 
+        direction :: Direction, 
+        trace :: [(Position,Direction)]
+    } deriving (Show)
+
+data Field = 
+    Field {
+        rows :: Int, columns :: Int, 
+        obstacles :: [Obstacle]
+    } deriving (Show)
 
 -- type Answer = L.Answer
-data Definition = Definition {rows :: Int, cols :: Int, obstacles :: [Obstacle], guard :: Guard}
-data Problem = Input String | Problem Definition
+data Definition = 
+    Definition {
+        field :: Field, 
+        guard :: Guard
+    } deriving (Show)
+
+data Problem = Input String | Problem Definition deriving (Show)
 
 instance L.Problem Problem where
     parse1 = parsePart1
-
     solve1 = solvePart1
-    solve2 _ = Unknown
+    solve2 = solvePart2
 
 --------------------------------------------------------------------------------
 
+-- solvePart2 :: Problem -> Answer
+-- solvePart2 (Problem d) =
+--     let f = d |> field
+--         obs = f |> obstacles
+--         pos = d |> guard |> position
+--         rows' = rows f
+--         cols' = columns f
+--         ps = [(r,c) | r <- [1..rows'], c <- [1..cols'], (r,c) `notElem` obs, (r,c) /= pos] 
+--         ds = [N,E,S,W] :: [Direction]
+--     in filter (\p' -> any (\d' -> checkObstaclePlacement p' d' obs) ds) ps |> length |> AnswerInt
+
+solvePart2 :: Problem -> Answer
+solvePart2 (Problem d) =
+    let g = guard d
+        f = field d
+        original_obstacles = f |> obstacles
+        obstacle_options = 
+            g `moveGuardOut` f |> trace |> map fst |> deduplicate |> filter (\rc -> rc /= position g)
+    in obstacle_options |> filter (\o -> g `loopGuardIn` f {obstacles = o:original_obstacles}) |> length |> AnswerInt
+    
+solvePart2 (Input input) = solvePart2 $ L.parse1 input
+
 solvePart1 :: Problem -> Answer
-solvePart1 (Problem definition) =
-    let g = guard definition
-        o = obstacles definition
-    in moveGuardOut g o |> trace |> deduplicate |> length |> AnswerInt
-    where
-        moveGuardOut :: Guard -> [Obstacle] -> Guard
-        moveGuardOut g o =
-            let new_g = moveGuard g o
-            in if pos new_g `insideMap` definition then moveGuard new_g o else new_g
-        deduplicate :: Eq a => [a] -> [a]
-        deduplicate [] = []
-        --deduplicate [x] = [x]
-        deduplicate (x:xs) =
-            if x `notElem` xs then x : deduplicate xs
-            else deduplicate xs
+solvePart1 (Problem d) =
+    let g = guard d
+        f = field d
+    in moveGuardOut g f |> trace |> map fst |> deduplicate |> length |> AnswerInt
+
 solvePart1 (Input input) = solvePart1 $ L.parse1 input
 --nextDirection :
+
+deduplicate :: Eq a => [a] -> [a]
+deduplicate [] = []
+deduplicate (x:xs) =
+    if x `notElem` xs then x : deduplicate xs
+    else deduplicate xs
 
 parsePart1 :: String -> Problem
 parsePart1 s =
@@ -67,18 +100,31 @@ parsePart1 s =
         guard_dir = guard_pos |> (\(r,c) -> toDirection (lns!!(r-1)!!(c-1)))
         guard' = Guard guard_pos guard_dir []
         obstacles' = filter (\(r,c) -> '#' == lns!!(r-1)!!(c-1)) rc
-        definition = Definition rows' cols' obstacles' guard'
+        field' = Field rows' cols' obstacles'
+        definition = Definition field' guard'
     in
         Problem definition
     where
         isGuard :: Char -> Bool
-        isGuard c = c `elem` "^>v<"
+        isGuard c = c `elem` "^>v<" 
         toDirection :: Char -> Direction
         toDirection c = case c `elemIndex` "^>v<" of
             Just idx -> toEnum idx :: Direction
             Nothing  -> error $ "Wrong direction character: " ++ [c]
 
 --------------------------------------------------------------------------------
+
+moveGuardOut :: Guard -> Field -> Guard
+moveGuardOut g f =
+    let o = obstacles f
+        new_g = moveGuard g o
+    in if new_g `insideMap` f then new_g `moveGuardOut` f else new_g
+
+loopGuardIn :: Guard -> Field -> Bool
+loopGuardIn g f =
+    let o = obstacles f
+        new_g = moveGuard g o
+    in insideLoop new_g || (new_g `insideMap` f) && (new_g `loopGuardIn` f)
 
 nextPosition :: Position -> Direction -> Position
 nextPosition (r,c) d =
@@ -87,9 +133,21 @@ nextPosition (r,c) d =
         E -> (r,c+1)
         S -> (r+1,c)
         W -> (r,c-1)
-insideMap :: Position -> Definition -> Bool
-insideMap (r, c) definition =
-    0 < r && r <= rows definition && 0 < c && c <= cols definition
+
+-- prevPosition :: Position -> Direction -> Position
+-- prevPosition p d = nextPosition p (succ . succ $ d) 
+
+insideMap :: Guard -> Field -> Bool
+insideMap g f =
+    let (r,c) = position g
+        rmax = rows f
+        cmax = columns f
+    in 0 < r && r <= rmax && 0 < c && c <= cmax
+
+insideLoop :: Guard -> Bool
+insideLoop g =
+    let t = g |> trace
+    in head t `elem` tail t
 
 isObstacle :: Position -> [Obstacle] -> Bool
 isObstacle = elem
@@ -98,7 +156,45 @@ moveGuard :: Guard -> [Obstacle] -> Guard
 moveGuard g obs =
     let new = nextPosition p d
     in
-        if not (isObstacle new obs) then Guard {pos = new, dir = d, trace = p:t}
-        else moveGuard (Guard {pos = p, dir = succ d, trace = t}) obs
+        if not (isObstacle new obs) then Guard {position = new, direction = d, trace = (p,d):t}
+        else moveGuard (Guard {position = p, direction = succ d, trace = t}) obs
     where
-        Guard {pos = p, dir = d, trace = t} = g
+        Guard {position = p, direction = d, trace = t} = g
+
+
+-- checkObstaclePlacement :: Position -> Direction -> [Obstacle] -> Bool
+-- checkObstaclePlacement p d org_obs =
+--     let new_obs = p:org_obs
+--         dir0 = d
+--         obs0 = Just p
+--         prec_p0 = fmap (`prevPosition` dir0) obs0
+--         dir1 = succ dir0
+--         obs1 = prec_p0 >>= (\p' -> nextObstacle p' dir1 new_obs)
+--         prec_p1 = obs1 |> fmap (`prevPosition` dir1)
+--         dir2 = succ dir1
+--         obs2 = prec_p1 >>= (\p' -> nextObstacle p' dir2 new_obs)
+--         prec_p2 = obs2 |> fmap (`prevPosition` dir2)
+--         dir3 = succ dir2
+--         obs3 = prec_p2 >>= (\p' -> nextObstacle p' dir3 new_obs)
+--         prec_p3 = obs3 |> fmap (`prevPosition` dir3)
+--         dir4 = succ dir3
+--         obs4 = prec_p3 >>= (\p' -> nextObstacle p' dir4 new_obs)
+--     in (case (obs0, obs4) of 
+--             (Just a, Just b) -> a == b
+--             _ -> False)
+
+-- nextObstacle :: Position -> Direction -> [Obstacle] -> Maybe Obstacle
+-- nextObstacle p d os =
+--     let (pr, pc) = p
+--         on_way = os |> 
+--             filter (\(obr,obc) -> case d of 
+--                 N -> obc == pc && obr < pr
+--                 E -> obr == pr && obc > pc
+--                 S -> obc == pc && obr > pr
+--                 W -> obr == pr && obc < pc)
+--     in case (d, on_way) of
+--         (_, []) -> Nothing
+--         (N, _) -> Just $ maximum on_way
+--         (E, _) -> Just $ minimum on_way
+--         (S, _) -> Just $ minimum on_way
+--         (W, _) -> Just $ maximum on_way
