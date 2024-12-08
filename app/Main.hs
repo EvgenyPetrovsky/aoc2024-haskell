@@ -1,7 +1,7 @@
 module Main (main) where
 
 import Lib
-import qualified Day07 as D
+import qualified Day08 as D
 
 --import Lib
 
