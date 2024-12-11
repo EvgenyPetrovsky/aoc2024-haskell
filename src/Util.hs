@@ -3,6 +3,7 @@ module Util
     stringToInts,
     frequency,
     distinct,
+    digitCount,
   )
 where
 
@@ -25,3 +26,10 @@ frequency = foldl update emptyM
 
 distinct :: (Ord a) => [a] -> [a]
 distinct a = a |> Set.fromList |> Set.toList
+
+digitCount :: Int -> Int
+digitCount 0 = 1
+digitCount n =
+  let abs_n = abs n :: Int
+      numbers = scanl1 (\z _ -> z * 10) [1 .. 18 :: Int]
+   in takeWhile (<= abs_n) numbers |> length
