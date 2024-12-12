@@ -4,6 +4,7 @@ module Util
     frequency,
     distinct,
     digitCount,
+    locationOrtoNeighbours2d,
   )
 where
 
@@ -33,3 +34,7 @@ digitCount n =
   let abs_n = abs n :: Int
       numbers = scanl1 (\z _ -> z * 10) [1 .. 18 :: Int]
    in takeWhile (<= abs_n) numbers |> length
+
+locationOrtoNeighbours2d :: (Int, Int) -> [(Int, Int)]
+locationOrtoNeighbours2d (x,y) =
+    [(x + dx, y + dy) | (dx, dy) <- [(0,-1),(1,0),(0,1),(-1,0)]]
