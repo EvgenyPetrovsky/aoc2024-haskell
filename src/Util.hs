@@ -35,6 +35,10 @@ digitCount n =
       numbers = scanl1 (\z _ -> z * 10) [1 .. 18 :: Int]
    in takeWhile (<= abs_n) numbers |> length
 
+-- filterMap :: Foldable m => (a -> Maybe b) -> m a -> m b
+-- filterMap f ma = map f ma |> filter'
+--  where filter' (empty ma) = empty
+
 locationOrtoNeighbours2d :: (Int, Int) -> [(Int, Int)]
 locationOrtoNeighbours2d (x,y) =
     [(x + dx, y + dy) | (dx, dy) <- [(0,-1),(1,0),(0,1),(-1,0)]]
