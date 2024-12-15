@@ -59,20 +59,20 @@ makeMove2 field direction
       let (_, new_b1, _) = makeMove2 (next location, boxes, walls) direction
           (_, new_b2, _) = makeMove2 (right . next $ location, new_b1, walls) direction
           new_b3 = moveBox (next location) new_b2
-       in (location, new_b3, walls)
+       in makeMove2 (location, new_b3, walls) direction
   | (direction == N || direction == S) && left (next location) `Set.member` boxes =
       let (_, new_b1, _) = makeMove2 (next location, boxes, walls) direction
           (_, new_b2, _) = makeMove2 (left . next $ location, new_b1, walls) direction
           new_b3 = moveBox (left . next $ location) new_b2
-       in (location, new_b3, walls)
+       in makeMove2 (location, new_b3, walls) direction
   | direction == E && next location `Set.member` boxes =
       let (_, new_b1, _) = makeMove2 (next . next $ location, boxes, walls) direction
           new_b2 = moveBox (next location) new_b1
-       in (location, new_b2, walls)
+       in makeMove2 (location, new_b2, walls) direction
   | direction == W && next (next location) `Set.member` boxes =
       let (_, new_b1, _) = makeMove2 (next . next $ location, boxes, walls) direction
           new_b2 = moveBox (next . next $ location) new_b1
-       in (location, new_b2, walls)
+       in makeMove2 (location, new_b2, walls) direction
   | otherwise = (next location, boxes, walls)
   where
     (location, boxes, walls) = field
@@ -99,7 +99,7 @@ canMakeMove2 (location, boxes, walls) direction
   --
   | location `Set.member` boxes && direction == E = canMakeMove2 (next1 location_r, boxes, walls) direction
   | location_l `Set.member` boxes && direction == E = canMakeMove2 (next1 location, boxes, walls) direction
-  | otherwise = True --error $ "non covered case: location is " ++ show location ++ ", direction is " ++ show direction
+  | otherwise = True
   where
     (row, col) = location
     location_l = (row, col - 1)
