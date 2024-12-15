@@ -1,6 +1,7 @@
 module ParseUtil
   ( stringToInts,
     inputToLocationCharTupples,
+    splitStringAtChar
   )
 where
 
@@ -17,3 +18,8 @@ inputToLocationCharTupples input =
     | (row, ln) <- zip [1 ..] (lines input),
       (col, chr) <- zip [1 ..] ln
   ]
+
+splitStringAtChar :: String -> Char -> (String,String)
+splitStringAtChar s c =
+  let (p1, p2) = span (/= c) s
+  in (p1, tail p2)
