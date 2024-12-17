@@ -6,7 +6,6 @@ module Day14
   )
 where
 
-import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set (Set, fromList, member)
 import Lib (Answer (..))
 import qualified Lib as L (Problem (..))

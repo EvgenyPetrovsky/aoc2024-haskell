@@ -24,6 +24,7 @@ dependencies:
 - containers >= 0.6.7
 - parsec >= 3.1.16
 - parsec-numbers >= 0.1
+- search-algorithms >= 0.3.3
 
 ghc-options:
 - -Wall
