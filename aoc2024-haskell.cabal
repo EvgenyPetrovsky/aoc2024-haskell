@@ -38,9 +38,9 @@ library
       Day14
       Day15
       Day16
+      Day17
       Lib
       ParseUtil
-      Search
       Util
   other-modules:
       Paths_aoc2024_haskell
