@@ -8,12 +8,11 @@ module Day20
 where
 
 import Algorithm.Search (dijkstraAssoc)
-import qualified Data.Set as Set (Set, empty, fromList, map, member, notMember, delete)
+import qualified Data.Set as Set (Set, empty, fromList, map, member, notMember)
 import Lib (Answer (..))
 import qualified Lib as L (Problem (..))
-import Util ( (|>), adjacents2D, filterNot )
+import Util ( (|>) )
 import Data.Foldable (Foldable(toList))
-import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Debug.Trace (trace)
 
@@ -114,37 +113,16 @@ altCosts cheat_duration saving field =
 solvePart1 :: Problem -> Answer
 solvePart1 (Input input) = solvePart1 $ parsePart1 input
 solvePart1 (Problem field) =
-  let num_cheats = alt_costs |> filter (<= (org_cost - saving)) |> length
-      num_cheats_precise = alt_costs |> filter (== (org_cost - saving)) |> length
+  let alt_costs = altCosts cheat_duration saving field
+      num_cheats = alt_costs |> length
    in AnswerTxt $
-      " original length: " ++ show org_cost ++
-      "\n cheating duration: 2" ++
+      --" original length: " ++ show org_cost ++
+      "\n cheating duration: " ++ show cheat_duration ++
       "\n time to save: " ++ show saving ++
-      "\n number of cheats saving exact time: " ++ show num_cheats_precise ++
       "\n answer: " ++ show num_cheats
   where
-    _ = trace ("original length: " ++ show org_cost)
     saving = 100
-    field_walls = walls field
-    start_pos = start field
-    end_pos = end field
-    (org_cost, org_path) = solve (walls field) start_pos end_pos |> toList |> head
-    isWall :: Location -> Bool
-    isWall l = l `Set.member` field_walls
-    cmp_path :: Map.Map Location Cost
-    cmp_path = (start_pos:org_path) |> (\p -> zip p [0..]) |> Map.fromList
-    rem_path :: Map.Map Location Cost
-    rem_path = reverse (start_pos:org_path) |> (\p -> zip p [0..]) |> Map.fromList
-    --alt_costs :: [Cost]
-      -- find where do we get by stepping off the original poath into wall and making one more step outisde the wall
-      -- filter out cases when alternative location equals to original location
-    alt_costs =
-      (start_pos:org_path)
-      |> concatMap (\loc -> adjacents2D loc |> filter isWall
-        |> concatMap (\loc1 -> next field_walls loc1 |> map fst |> filterNot isWall |> map (\loc2 -> (loc, loc2))))
-      |> filter (uncurry (/=))
-      |> nub
-      |> map (\(loc, alt) -> cmp_path Map.! loc + 2 + rem_path Map.! alt)
+    cheat_duration = 2
 
 
 solve :: Set.Set Location -> State -> Location -> Maybe (Cost, [State])
@@ -176,11 +154,6 @@ adj2dOrto (x,y) distance =
    in [(x+dx,y+dy) | dx <- range
                    , dy <- range
                    , (abs dx + abs dy) <= distance]
-
-adj2dAll :: Location -> Int -> [Location]
-adj2dAll (x,y) distance =
-  let range = [-distance..distance]
-   in [(x+dx,y+dy) | dx <- range, dy <- range]
 
 --------------------------------------------------------------------------------
 
