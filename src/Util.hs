@@ -2,10 +2,13 @@ module Util
   ( (|>),
     stringToInts,
     frequency,
+    chunksOf,
     distinct,
     digitCount,
     locationOrtoNeighbours2d,
-    filterNot
+    filterNot,
+    -- vectors & coordinates
+    adjacents2D
   )
 where
 
@@ -30,6 +33,13 @@ frequency = foldl update emptyM
 distinct :: (Ord a) => [a] -> [a]
 distinct a = a |> nub
 
+chunksOf :: Int -> [a] -> [[a]]
+chunksOf _ [] = []
+chunksOf n x = 
+  let p1 = take n x
+      p2 = drop n x
+   in p1 : chunksOf n p2
+
 digitCount :: Int -> Int
 digitCount 0 = 1
 digitCount n =
@@ -47,3 +57,7 @@ locationOrtoNeighbours2d (x,y) =
 
 filterNot :: (a -> Bool) -> [a] -> [a]
 filterNot f = filter (not . f)
+
+adjacents2D :: (Int, Int) -> [(Int,Int)]
+adjacents2D (x,y) =
+  [(x+dx,y+dy) | dx <- [-1..1], dy <- [-1..1], abs (dx + dy) == 1]

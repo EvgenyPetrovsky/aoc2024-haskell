@@ -1,6 +1,6 @@
 module Main (main) where
 
-import qualified Day20 as D
+import qualified Day25 as D
 import Lib
 import Util
 
